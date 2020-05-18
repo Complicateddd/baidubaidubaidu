@@ -25,6 +25,8 @@ def RMSLE(input_data,label_):
     # print(distance_muti)
     result_rmsle=torch.sqrt(distance_muti/392*5)
     return result_rmsle
+def o(input_o):
+    pass
 
 
 
