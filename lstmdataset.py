@@ -94,7 +94,7 @@ class Subset(BaseDataset):
 
 
 class InfectDataset(BaseDataset):
-    def __init__(self, args):
+    def __init__(self, args,mode='X'):
         self.args = args
         self.input_file = self.args.input_file
         self.label_file = self.args.label_file
@@ -105,51 +105,102 @@ class InfectDataset(BaseDataset):
         self.n_pred = self.args.n_pred
         self.n_his = self.args.n_his
 
-        self.data = self.process()
+        self.data = self.process(mode)
 
-    def process(self):
-        X = pd.read_csv(self.input_file)
-        X = X.fillna(0.0)
+    def process(self,mode='X'):
+        if mode=='X':
+
+            X = pd.read_csv(self.input_file)
+            X = X.fillna(0.0)
+
 #        Y = pd.read_csv(self.label_file)
         
-        with open(self.region_names_file, 'r') as f:
-            for line in f:
-                region_names = line.strip().split()
+            with open(self.region_names_file, 'r') as f:
+                for line in f:
+                    region_names = line.strip().split()
 
-        # scaling #放缩
-        SCALE = 1000
-        for name in region_names:
-            X[name] = X[[name]].apply(lambda x: x/SCALE)
-#            Y[name] = Y[[name]].apply(lambda x: x/SCALE)
+            # scaling #放缩
+            SCALE = 1000
+            for name in region_names:
+                X[name] = X[[name]].apply(lambda x: x/SCALE)
+    #            Y[name] = Y[[name]].apply(lambda x: x/SCALE)
 
+            
+            # print("region migration: ", X.head())
+            # print("infect: ", Y.head())
+
+            X = X.drop(columns=['date'])
+    #        Y = Y.drop(columns=['date'])
+    #        print(X.shape)
+            date_num = len(X)
+    #        train_num = date_num - self.n_pred
+
+            df = pd.DataFrame(columns=X.columns)
+    #        df_y= pd.DataFrame(columns=X.columns)
+            # (?, n_his, city_num, node_feat_dim)
+            for i in range(date_num - self.n_his - self.n_pred + 1):
+    #            print(i)
+                df = df.append(X[i:(i + self.n_his)])
+    #            df_y=df_y.append(X[i + self.n_his])
+                # print(X[i:(i + self.n_his)])
+    #            print(X[i + self.n_his:(i + self.n_his+1)])
+                df = df.append(X[i + self.n_his:(i + self.n_his+1)])
+
+            # for testing
+            df = df.append(X[-self.n_his:])
+            df = df.append(X[-self.n_pred:]) # unused, for padding
+    #        print(df.shape)
+            data = df.values.reshape(-1,self.n_his+1,self.city_num,1)
+    #        print(data[:,30:31,:,:])
+            return data
+        elif mode=='Y':
+            print('Y dataset')
+            # X = pd.read_csv(self.input_file)
+            # X = X.fillna(0.0)
+
+            Y = pd.read_csv(self.label_file)
         
-        # print("region migration: ", X.head())
-        # print("infect: ", Y.head())
+            with open(self.region_names_file, 'r') as f:
+                for line in f:
+                    region_names = line.strip().split()
 
-        X = X.drop(columns=['date'])
-#        Y = Y.drop(columns=['date'])
-#        print(X.shape)
-        date_num = len(X)
-#        train_num = date_num - self.n_pred
+            # scaling #放缩
+            SCALE = 1000
+            for name in region_names:
+                # X[name] = X[[name]].apply(lambda x: x/SCALE)
+                Y[name] = Y[[name]].apply(lambda x: x/SCALE)
 
-        df = pd.DataFrame(columns=X.columns)
-#        df_y= pd.DataFrame(columns=X.columns)
-        # (?, n_his, city_num, node_feat_dim)
-        for i in range(date_num - self.n_his - self.n_pred + 1):
-#            print(i)
-            df = df.append(X[i:(i + self.n_his)])
-#            df_y=df_y.append(X[i + self.n_his])
-            # print(X[i:(i + self.n_his)])
-#            print(X[i + self.n_his:(i + self.n_his+1)])
-            df = df.append(X[i + self.n_his:(i + self.n_his+1)])
+            
+            # print("region migration: ", X.head())
+            # print("infect: ", Y.head())
 
-        # for testing
-        df = df.append(X[-self.n_his:])
-        df = df.append(X[-self.n_pred:]) # unused, for padding
-#        print(df.shape)
-        data = df.values.reshape(-1,self.n_his+1,self.city_num,1)
-#        print(data[:,30:31,:,:])
-        return data
+            # X = X.drop(columns=['date'])
+            Y = Y.drop(columns=['date'])
+    #        print(X.shape)
+            date_num = len(Y)
+    #        train_num = date_num - self.n_pred
+
+            df = pd.DataFrame(columns=Y.columns)
+    #        df_y= pd.DataFrame(columns=X.columns)
+            # (?, n_his, city_num, node_feat_dim)
+            for i in range(date_num - self.n_his - self.n_pred + 1):
+    #            print(i)
+                df = df.append(Y[i:(i + self.n_his)])
+                # df_y=df_y.append(X[i + self.n_his])
+                # print(X[i:(i + self.n_his)])
+    #            print(X[i + self.n_his:(i + self.n_his+1)])
+                df = df.append(Y[i + self.n_his:(i + self.n_his+1)])
+
+            # for testing
+            df = df.append(Y[-self.n_his:])
+            df = df.append(Y[-self.n_pred:]) # unused, for padding
+    #        print(df.shape)
+            data = df.values.reshape(-1,self.n_his+1,self.city_num,1)
+    #        print(data[:,30:31,:,:])
+            return data
+        else:
+            raise ValueError('only X or Y is supported' )
+
 
     def __len__(self):
         return len(self.data)
@@ -166,18 +217,18 @@ if __name__=="__main__":
     parser.add_argument('--feat_dim', type=int, default=1)
     parser.add_argument('--n_his', type=int, default=5)
     parser.add_argument('--n_pred', type=int, default=1)
-    parser.add_argument('--batch_size', type=int, default=20)
-    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--batch_size', type=int, default=1)
+    parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--save', type=int, default=10)
-    parser.add_argument('--Ks', type=int, default=3)  #equal to num_layers
-    parser.add_argument('--Kt', type=int, default=3)
-    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--Ks', type=int, default=1)  #equal to num_layers
+    parser.add_argument('--Kt', type=int, default=4)
+    parser.add_argument('--lr', type=float, default=0.005)
     parser.add_argument('--keep_prob', type=float, default=1.0)
     parser.add_argument('--opt', type=str, default='ADAM')
     parser.add_argument('--inf_mode', type=str, default='sep')
-    parser.add_argument('--input_file', type=str, default='G:/百度/data_processed/region_migration.csv')
-    parser.add_argument('--label_file', type=str, default='G:/百度/data_processed/infection.csv')
-    parser.add_argument('--adj_mat_file', type=str, default='G:/百度/data_processed/adj_matrix.npy')
+    parser.add_argument('--input_file', type=str, default='/home/ubuntu/baidu/data_processed/region_migration.csv')
+    parser.add_argument('--label_file', type=str, default='/home/ubuntu/baidu/data_processed/infection.csv')
+    parser.add_argument('--adj_mat_file', type=str, default='/home/ubuntu/baidu/data_processed/adj_matrix.npy')
     parser.add_argument('--output_path', type=str, default='./outputs/')
     parser.add_argument('--val_num', type=str, default=3)
     parser.add_argument('--test_num', type=str, default=1)
@@ -185,7 +236,7 @@ if __name__=="__main__":
     parser.add_argument('--train_all', action='store_true')
     
     parser.add_argument('--region_names_file', type=str, 
-            default='G:/百度/data_processed/region_names.txt')
+            default='/home/ubuntu/baidu/data_processed/region_names.txt')
     args = parser.parse_args()
     dataset = InfectDataset(args)
     print("num examples: %s" % len(dataset))

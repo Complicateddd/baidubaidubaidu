@@ -31,7 +31,7 @@ class Model(nn.Module):
                                                self.args.blocks[1],self.args.keep_prob,act_fun='GLU'))
         
         self.sq.add_module('output',output_layer(Ko,n,128))
-        self.sq.add_module('R',nn.ReLU(inplace=True))
+        # self.sq.add_module('R',nn.ReLU(inplace=True))
         
     def forward(self,x):
         out=self.sq(x)

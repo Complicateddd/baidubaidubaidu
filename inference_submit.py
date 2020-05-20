@@ -84,15 +84,15 @@ if __name__=="__main__":
     model.load_state_dict(torch.load('best_model'))
     model.eval()
 #    dataset
-    infer_data=np.loadtxt("region_migration_30.txt",delimiter=",")
-
+    infer_data=np.loadtxt("feature_migration_50.txt",delimiter=",")
+    print(infer_data.shape)
     temp_list=[]
-    for number in range(6):
-        infer_batch_data=infer_data[number*5:(number+1)*5,:]
-
+    for number in range(30):
+        infer_batch_data=infer_data[number:number+5,:]/1000
+        # print(infer_batch_data)
         data=torch.from_numpy(infer_batch_data).reshape(1,1,5,392).float().cuda()
         out=model(data)
-        pred=out.reshape(5,1,392,1)
+        pred=out.reshape(5,1,392,1)[0,:,:,:]
         temp_list.append(pred)
     result=torch.stack(temp_list)
     result=result.reshape(30,1,392,1)

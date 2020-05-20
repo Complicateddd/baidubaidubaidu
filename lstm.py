@@ -20,7 +20,7 @@ class RNN(nn.Module):
 #        print(x1.shape)
         a,b,c = x1.shape
         out = self.out(x1.reshape(-1,c)) #因为线性层输入的是个二维数据，所以此处应该将lstm输出的三维数据x1调整成二维数据，最后的特征维度不能变
-        out=self.relu(out)
+        # out=self.relu(out)
         out1 = out.reshape(a,b,-1) #因为是循环神经网络，最后的时候要把二维的out调整成三维数据，下一次循环使用
         return out1
 

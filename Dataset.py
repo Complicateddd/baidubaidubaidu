@@ -114,8 +114,8 @@ class InfectDataset(BaseDataset):
 
             df = df.append(X[i:(i + self.n_his)])
             # print(X[i:(i + self.n_his)])
-#            df = df.append(Y[(i + self.n_his):(i + self.n_his + self.n_pred)])
-            df = df.append(Y[i:(i + self.n_his)])
+            df = df.append(Y[(i + self.n_his):(i + self.n_his + self.n_pred)])
+            # df = df.append(Y[i:(i + self.n_his)])
         # for testing
         df = df.append(X[-self.n_his:])
         df = df.append(Y[-self.n_pred:]) # unused, for padding
